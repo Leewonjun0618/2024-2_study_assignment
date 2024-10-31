@@ -20,7 +20,44 @@ namespace statistics
 
             int stdCount = data.GetLength(0) - 1;
             // ---------- TODO ----------
+            for (int i = 2; i <5; i++)
+            {
+                double sum = 0;
+                for (int j = 1; j < 6; j++) 
+                {
+                    sum += double.Parse(data[j, i]);
+                }
+                double ave = sum / stdCount;
+                Console.WriteLine($"{data[0, i]} Average = {ave}");
+            }
             
+            for (int i=2;i<5;i++)
+            {
+                double maxscore = 0;
+                double minscore = 100;
+                for (int j=1;j<6;j++)
+                {
+                    if (double.Parse(data[j,i]) > maxscore){maxscore = double.Parse(data[j,i]);}
+                    if (double.Parse(data[j,i]) < minscore){minscore = double.Parse(data[j,i]);}
+                }
+                Console.WriteLine($"{data[0, i]} Maximum = {maxscore}\n{data[0, i]} Minimum = {minscore}");
+            }
+            
+            var studentscores = new (string Name, double Totalscore)[stdCount];
+            for (int j=1;j<6;j++)
+            {
+                double total = 0;
+                for (int i=2;i<5;i++) 
+                {
+                    total += double.Parse(data[j, i]);
+                }
+                studentscores[j - 1] = (data[j, 1], total);
+            }
+            var scoreorder = studentscores.OrderByDescending(s => s.Totalscore).ToArray();
+            for (int i=0;i<scoreorder.Length;i++)   
+            {
+                Console.WriteLine($"{scoreorder[i].Name}: {i+1}th");
+            }
             // --------------------
         }
     }
