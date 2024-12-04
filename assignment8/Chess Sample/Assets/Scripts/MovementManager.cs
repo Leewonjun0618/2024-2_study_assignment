@@ -23,26 +23,65 @@ public class MovementManager : MonoBehaviour
         // 보드에 있는지, 다른 piece에 의해 막히는지 등을 체크
         // 폰에 대한 예외 처리를 적용
         // --- TODO ---
-        if (!Utils.IsInBoard(targetPos))
-            return false;
+        int startX = piece.MyPos.Item1;
+        int startY = piece.MyPos.Item2;
+        int dirX = moveInfo.dirX;
+        int dirY = moveInfo.dirY;
 
-        int StartX = piece.MyPos.Item1;
-        int StartY = piece.MyPos.Item2;
-        int AddX = StartX + moveInfo.dirX * moveInfo.distance;
-        int AddY = StartY + moveInfo.dirY * moveInfo.distance;
-
-        if ((AddX, AddY) == targetPos)
+        for (int step = 1; step <= moveInfo.distance; step++)
         {
-            for (int step = 1; step <= moveInfo.distance; step++)
-            {
-                int InterX = StartX + moveInfo.dirX * step;
-                int InterY = StartY + moveInfo.dirY * step;
+            int newX = startX + dirX * step;
+            int newY = startY + dirY * step;
 
-                if (gameManager.Pieces[InterX, InterY] != null && gameManager.Pieces[InterX, InterY].PlayerDirection == piece.PlayerDirection)
-                    return false;
+            //보드 경계를 벗어날때
+            if (!Utils.IsInBoard((newX, newY)))
+                return false;
+
+            //경로에 있는 칸
+            Piece encounteredPiece = gameManager.Pieces[newX, newY];
+
+            //폰
+            if (piece is Pawn)
+            {
+                //대각선 아닐때
+                if (dirX == 0)
+                {
+                    if (encounteredPiece != null)
+                        return false; // 직선 전진 시 중간에 말이 있으면 이동 불가
+                }
+                //대각선
+                else
+                {
+                    if (encounteredPiece == null || encounteredPiece.PlayerDirection == piece.PlayerDirection)
+                        return false; //대각선에 적 없거나 색 같을때
+                    else if ((newX, newY) == (targetPos.Item1, targetPos.Item2))
+                        return true;
+                    else
+                        return false;
+                }
             }
-            return true;
+            else
+            {
+                //아군말이 중간에있으면 false
+                if (encounteredPiece != null && encounteredPiece.PlayerDirection == piece.PlayerDirection)
+                    return false;
+
+                //적말이 있을때, 끝인지, 중간인지
+                if (encounteredPiece != null && encounteredPiece.PlayerDirection != piece.PlayerDirection)
+                {
+                    if ((newX, newY) == (targetPos.Item1, targetPos.Item2))
+                        return true;
+                    else
+                        return false;
+                }
+            }
+
+            // 목표 위치에 도달하면 이동 가능
+            if ((newX, newY) == (targetPos.Item1, targetPos.Item2))
+                return true;
         }
+
+        // 경로상의 장애물 없이 목표 위치에 도달하지 못한 경우
         return false;
         // ------
     }

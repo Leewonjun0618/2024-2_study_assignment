@@ -138,15 +138,22 @@ public class GameManager : MonoBehaviour
         // 해당 위치에 다른 Piece가 있다면 삭제
         // Piece를 이동시킴
         // --- TODO ---
+        if (!IsValidMove(piece, targetPos)) return;
+    
         Piece TargetPiece = Pieces[targetPos.Item1, targetPos.Item2];
         if (TargetPiece != null)
         {
             Destroy(TargetPiece.gameObject);
-            Pieces[targetPos.Item1, targetPos.Item2] = null;
         }
+
+        //기존 위치를 비움
+        (int, int) originalPos = piece.MyPos;
+
+        // Piece를 이동시킴
         piece.MoveTo(targetPos);
-        Pieces[piece.MyPos.Item1, piece.MyPos.Item2] = null;
-        Debug.Log($"{CurrentTurn}");
+        Pieces[originalPos.Item1, originalPos.Item2] = null; //올바른 이전 위치를 null로 설정
+        Pieces[targetPos.Item1, targetPos.Item2] = piece;
+
         ChangeTurn();
         // ------
     }
@@ -157,6 +164,8 @@ public class GameManager : MonoBehaviour
         // --- TODO ---
         if (CurrentTurn == 1) CurrentTurn = -1;
         else CurrentTurn = 1;
+
+        uiManager.UpdateTurn(CurrentTurn);
         // ------
     }
 }
