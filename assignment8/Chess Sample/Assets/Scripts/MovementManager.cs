@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -22,14 +23,34 @@ public class MovementManager : MonoBehaviour
         // 보드에 있는지, 다른 piece에 의해 막히는지 등을 체크
         // 폰에 대한 예외 처리를 적용
         // --- TODO ---
-        
+        if (!Utils.IsInBoard(targetPos))
+            return false;
+
+        int StartX = piece.MyPos.Item1;
+        int StartY = piece.MyPos.Item2;
+        int AddX = StartX + moveInfo.dirX * moveInfo.distance;
+        int AddY = StartY + moveInfo.dirY * moveInfo.distance;
+
+        if ((AddX, AddY) == targetPos)
+        {
+            for (int step = 1; step <= moveInfo.distance; step++)
+            {
+                int InterX = StartX + moveInfo.dirX * step;
+                int InterY = StartY + moveInfo.dirY * step;
+
+                if (gameManager.Pieces[InterX, InterY] != null && gameManager.Pieces[InterX, InterY].PlayerDirection == piece.PlayerDirection)
+                    return false;
+            }
+            return true;
+        }
+        return false;
         // ------
     }
 
     // 체크를 제외한 상황에서 가능한 움직임인지를 검증
     private bool IsValidMoveWithoutCheck(Piece piece, (int, int) targetPos)
     {
-        if (!Utils.IsInBoard(targetPos) || targetPos == piece.MyPos) return false;
+        if (!Utils.IsInBoard(targetPos) || targetPos == piece.MyPos) return false; //보드를 넘어가는 상황과 현재 위치일때 false
 
         foreach (var moveInfo in piece.GetMoves())
         {
@@ -40,14 +61,14 @@ public class MovementManager : MonoBehaviour
         return false;
     }
 
-    // 체크를 포함한 상황에서 가능한 움직임인지를 검증
+    // 체크를 포함한 상황에서 가능한 움직임인지를 검증 : 움직였을때, 그 곳이 체크가 되는 위치라면, flase를 반환함
     public bool IsValidMove(Piece piece, (int, int) targetPos)
     {
         if (!IsValidMoveWithoutCheck(piece, targetPos)) return false;
 
         // 체크 상태 검증을 위한 임시 이동
         var originalPiece = gameManager.Pieces[targetPos.Item1, targetPos.Item2];
-        var originalPos = piece.MyPos;
+        var originalPos = piece.MyPos; 
 
         gameManager.Pieces[targetPos.Item1, targetPos.Item2] = piece;
         gameManager.Pieces[originalPos.Item1, originalPos.Item2] = null;
@@ -79,12 +100,33 @@ public class MovementManager : MonoBehaviour
                 }
             }
             if (kingPos.Item1 != -1 && kingPos.Item2 != -1) break;
-        }
-
+        } //Pieces를 탐색하여, 왕의 위치를 얻음
         // 왕이 지금 체크 상태인지를 리턴
         // gameManager.Pieces에서 Piece들을 참조하여 움직임을 확인
         // --- TODO ---
-        
+        bool IsCheck = false;
+        for (int x = 0; x < Utils.FieldWidth; x++)
+        {
+            for (int y = 0; y < Utils.FieldHeight; y++)
+            {
+                var piece = gameManager.Pieces[x, y];
+                if (piece != null)
+                {
+                    if (piece.PlayerDirection != playerDirection)
+                    {
+                        foreach (var moveInfo in piece.GetMoves())
+                        {
+                            if (TryMove(piece, kingPos, moveInfo))
+                            {
+                                IsCheck = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return IsCheck;
         // ------
     }
 
@@ -97,7 +139,21 @@ public class MovementManager : MonoBehaviour
         // effectPrefab을 effectParent의 자식으로 생성하고 위치를 적절히 설정
         // currentEffects에 effectPrefab을 추가
         // --- TODO ---
-        
+        for (int x = 0; x < Utils.FieldWidth; x++)
+        {
+            for (int y = 0; y < Utils.FieldHeight; y++)
+            {
+                if (IsValidMove(piece, (x, y)))
+                {
+                    Vector2 RealXY = Utils.ToRealPos((x, y));
+                    Vector3 EffectPosition = new Vector3(RealXY.x, RealXY.y, 0.5f);
+
+                    GameObject NewEffect = Instantiate(effectPrefab, EffectPosition, Quaternion.identity, effectParent);
+
+                    currentEffects.Add(NewEffect);
+                }
+            }
+        }
         // ------
     }
 
